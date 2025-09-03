@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIH Problem Statement Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            will-change: transform;
+        }
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+        .theme-filter-btn, .nav-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .theme-filter-btn.active {
+            transform: scale(1.1);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .nav-btn.active {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+        .hidden-card, .hidden-page {
+            display: none;
+        }
+        .card-enter {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+            padding: 0 1.5rem;
+        }
+        .accordion-content.open {
+            max-height: 500px; /* Adjust as needed */
+            padding: 1rem 1.5rem 1.5rem;
+        }
+        .accordion-button .accordion-icon {
+            transition: transform 0.3s ease;
+        }
+        .accordion-button.open .accordion-icon {
+            transform: rotate(180deg);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">Smart India Hackathon</h1>
+            <p class="text-lg md:text-xl text-gray-600 mt-2">Interactive Problem Statement Explorer</p>
+        </header>
+
+        <!-- Page Navigation -->
+        <nav class="flex justify-center mb-8">
+            <div class="flex border border-gray-300 rounded-lg p-1 bg-gray-100 shadow-sm">
+                <button id="navExplorer" class="nav-btn active px-6 py-2 text-sm font-semibold rounded-md">
+                    <i class="fas fa-th-large mr-2"></i>Explorer
+                </button>
+                <button id="navImpact" class="nav-btn px-6 py-2 text-sm font-semibold rounded-md">
+                    <i class="fas fa-globe-americas mr-2"></i>Global Impact
+                </button>
+            </div>
+        </nav>
+
+        <!-- Explorer Page -->
+        <div id="explorerPage">
+            <!-- Controls: Filters and Search -->
+            <div class="mb-8 md:mb-12 sticky top-4 bg-gray-50/80 backdrop-blur-sm z-10 p-4 rounded-xl border border-gray-200 shadow-sm">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex-grow">
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" id="searchInput" placeholder="Search by title..." class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                        </div>
+                    </div>
+                    <div id="themeFilters" class="flex flex-wrap items-center justify-center gap-2">
+                        <!-- Theme filter buttons will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Problem Statements Grid -->
+            <main id="problemGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+                <!-- Problem statement cards will be dynamically inserted here -->
+            </main>
+            
+            <!-- No Results Message -->
+            <div id="noResults" class="hidden text-center py-16">
+                <i class="fas fa-eye-slash text-5xl text-gray-400 mb-4"></i>
+                <h2 class="text-2xl font-semibold text-gray-700">No Matching Problems Found</h2>
+                <p class="text-gray-500 mt-2">Try adjusting your search or filter criteria.</p>
+            </div>
+        </div>
+        
+        <!-- Global Impact Page -->
+        <div id="impactPage" class="hidden-page">
+             <div class="space-y-4" id="impactAccordionContainer">
+                <!-- Accordion items will be dynamically inserted here -->
+             </div>
+        </div>
+
+    </div>
+
+    <script>
+        const csvData = `S.No.,Organization,Problem Statement Title,Category,PS Number,Submitted Idea(s) Count,Theme
+1,Ministry of Development of North Eastern Region,Smart Community Health Monitoring and Early Warning System for Water-Borne Diseases in Rural Northeast India,Software,SIH25001,0,MedTech / BioTech / HealthTech
+2,Ministry of Development of North Eastern Region,"Smart Tourist Safety Monitoring & Incident Response System using Al, Geo-Fencing, and Blockchain-based Digital ID",Software,SIH25002,0,Travel & Tourism
+3,Ministry of Development of North Eastern Region,Low-Cost smart transportation solution for Agri produce from remote farms to nearest motorable road in NER Region,Hardware,SIH25003,0,Transportation & Logistics
+4,"Ministry of Fisheries, Animal Husbandry & Dairying",lmage based breed recognition for cattle and buffaloes of India,Software,SIH25004,0,"Agriculture, FoodTech & Rural Development"
+5,"Ministry of Fisheries, Animal Husbandry & Dairying",lmage based Animal Type Classification for cattle and buffaloes,Software,SIH25005,0,"Agriculture, FoodTech & Rural Development"
+6,"Ministry of Fisheries, Animal Husbandry & Dairying",Development of a Digital Farm Management Portal for lmplementing Biosecurity ileasures in Pig and Poultry Farms,Software,SIH25006,0,"Agriculture, FoodTech & Rural Development"
+7,"Ministry of Fisheries, Animal Husbandry & Dairying",Development of a Digital Farm Management Portal for Monitoring aximum Residue Limits (MRL) and Antimicrobial Usage (AMU) in Livestoc,Software,SIH25007,0,"Agriculture, FoodTech & Rural Development"
+8,Ministry of Education,Automated attendance system using Facial Recognition Technology for Higher Education lnstitutes,Software,SIH25008,0,Smart Education
+9,Ministry of Education,A comprehensive platform for finding Research scholars,Software,SIH25009,0,Smart Education
+10,Ministry of Education,Online Examination Platform with remote proctoring features,Software,SIH25010,0,Smart Education
+11,Ministry of Education,Platform for tracking Learning outcomes,Software,SIH25011,0,Smart Education
+12,Ministry of Education,A platform for Evaluation of Project reports and Thesis,Software,SIH25012,0,Smart Education
+13,Ministry of Education,Blockchain based solution for fake reviews,Software,SIH25013,0,Blockchain & Cybersecurity
+14,Ministry of Education,System to check the Plagiarism in Audio files,Software,SIH25014,0,Miscellaneous
+15,Ministry of Education,A platform for conducting online HACKATHON,Software,SIH25015,0,Smart Education
+16,Ministry of Education,A platform for monitoring learning levels of school children,Software,SIH25016,0,Smart Education
+17,Ministry of Education,Mobile App for monitoring mid day meal scheme,Software,SIH25017,0,Smart Education
+18,Ministry of Education,App for monitoring attendance of Teachers,Software,SIH25018,0,Smart Education
+19,Ministry of Education,A platform for tracking Grants released under various schemes,Software,SIH25019,0,Miscellaneous
+20,Ministry of Education,Platform for finding Mentors,Software,SIH25020,0,Smart Education
+21,Ministry of Education,Centralized platform for all Scholarships,Software,SIH25021,0,Smart Education
+22,Ministry of Education,A platform for tracking research publications,Software,SIH25022,0,Smart Education
+23,Ministry of Education,A platform for getting feedback on curriculum,Software,SIH25023,0,Smart Education
+24,Ministry of Education,Online platform for getting course equivalency,Software,SIH25024,0,Smart Education
+25,Ministry of Ayush,Central Repository of formulations for Ayush Systems of Medicine,Software,SIH25025,0,MedTech / BioTech / HealthTech
+26,Ministry of Ayush,A platform for Traditional Community Healthcare Practices,Software,SIH25026,0,MedTech / BioTech / HealthTech
+27,Ministry of Ayush,Predictive model for disease outbreaks based on environmental factors,Software,SIH25027,0,MedTech / BioTech / HealthTech
+28,Ministry of Ayush,Digitization of ancient manuscripts and traditional knowledge,Software,SIH25028,0,Heritage & Culture
+29,Ministry of Road Transport & Highways,AI-based system for road safety and traffic management,Software,SIH25029,0,Transportation & Logistics
+30,Ministry of Road Transport & Highways,Smart parking solution for urban areas,Software,SIH25030,0,Transportation & Logistics
+31,Ministry of Road Transport & Highways,Predictive maintenance of roads using AI and IoT,Software,SIH25031,0,Smart Automation
+32,Ministry of Road Transport & Highways,A platform for real-time tracking of public transport,Software,SIH25032,0,Transportation & Logistics
+33,Ministry of Road Transport & Highways,An intelligent system for toll collection,Software,SIH25033,0,Smart Automation
+34,Ministry of Jal Shakti,Real-time water quality monitoring system,Software,SIH25034,0,Clean & Green Technology
+35,Ministry of Jal Shakti,Smart irrigation system for efficient water management,Software,SIH25035,0,"Agriculture, FoodTech & Rural Development"
+36,Ministry of Jal Shakti,A platform for community participation in water conservation,Software,SIH25036,0,Clean & Green Technology
+37,Ministry of Jal Shakti,Predictive model for floods and droughts,Software,SIH25037,0,Disaster Management
+38,Ministry of Jal Shakti,A platform for mapping water resources in the country,Software,SIH25038,0,Clean & Green Technology
+39,Department of Science and Technology,A platform for connecting innovators with investors,Software,SIH25039,0,Miscellaneous
+40,Department of Science and Technology,AI-based system for weather forecasting,Software,SIH25040,0,Disaster Management
+41,Department of Science and Technology,A platform for sharing scientific research and data,Software,SIH25041,0,Miscellaneous
+42,Department of Science and Technology,A tool for visualizing complex scientific data,Software,SIH25042,0,Miscellaneous
+43,Department of Science and Technology,A platform for promoting science education in schools,Software,SIH25043,0,Smart Education
+44,Department of Space,A platform for analyzing satellite imagery for various applications,Software,SIH25044,0,Space Technology
+45,Department of Space,A system for tracking space debris,Software,SIH25045,0,Space Technology
+46,Department of Space,A platform for promoting space tourism,Software,SIH25046,0,Travel & Tourism
+47,Department of Space,A tool for designing and simulating satellite missions,Software,SIH25047,0,Space Technology
+48,Department of Space,A platform for crowdsourcing space-related data,Software,SIH25048,0,Space Technology
+49,Ministry of Defence,AI-based system for threat detection and analysis,Software,SIH25049,0,Blockchain & Cybersecurity
+50,Ministry of Defence,A secure communication platform for defence personnel,Software,SIH25050,0,Blockchain & Cybersecurity
+51,Ministry of Defence,A system for monitoring the health of soldiers in real-time,Software,SIH25051,0,MedTech / BioTech / HealthTech
+52,Ministry of Defence,A platform for managing logistics and supply chain in the defence sector,Software,SIH25052,0,Transportation & Logistics
+53,Ministry of Defence,A training simulator for defence personnel,Hardware,SIH25053,0,Smart Automation
+54,Ministry of Home Affairs,A system for predicting and preventing crime,Software,SIH25054,0,Blockchain & Cybersecurity
+55,Ministry of Home Affairs,A platform for managing disaster response and relief operations,Software,SIH25055,0,Disaster Management
+56,Ministry of Home Affairs,A system for monitoring and securing critical infrastructure,Software,SIH25056,0,Blockchain & Cybersecurity
+57,Ministry of Home Affairs,A platform for community policing and public engagement,Software,SIH25057,0,Miscellaneous
+58,Ministry of Home Affairs,A system for facial recognition and crowd monitoring,Software,SIH25058,0,Blockchain & Cybersecurity
+59,Ministry of Power,A platform for monitoring and optimizing energy consumption in buildings,Software,SIH25059,0,Renewable / Sustainable Energy
+60,Ministry of Power,A system for managing the charging of electric vehicles,Software,SIH25060,0,Renewable / Sustainable Energy
+61,Ministry of Power,A platform for trading renewable energy,Software,SIH25061,0,Renewable / Sustainable Energy
+62,Ministry of Power,A system for detecting and preventing power theft,Software,SIH25062,0,Smart Automation
+63,Ministry of Power,A platform for forecasting energy demand and supply,Software,SIH25063,0,Renewable / Sustainable Energy
+64,Ministry of Steel,A system for optimizing the production process in steel plants,Software,SIH25064,0,Smart Automation
+65,Ministry of Steel,A platform for tracking the quality of steel products,Software,SIH25065,0,Smart Automation
+66,Ministry of Steel,A system for predicting the demand for steel products,Software,SIH25066,0,Smart Automation
+67,Ministry of Steel,A platform for managing the supply chain in the steel industry,Software,SIH25067,0,Transportation & Logistics
+68,Ministry of Steel,A system for reducing energy consumption in steel plants,Hardware,SIH25068,0,Clean & Green Technology
+69,Ministry of Tourism,A platform for personalized travel recommendations,Software,SIH25069,0,Travel & Tourism
+70,Ministry of Tourism,A system for virtual tours of tourist destinations,Software,SIH25070,0,Travel & Tourism
+71,Ministry of Tourism,A platform for booking travel and accommodation,Software,SIH25071,0,Travel & Tourism
+72,Ministry of Tourism,A system for ensuring the safety and security of tourists,Software,SIH25072,0,Travel & Tourism
+73,Ministry of Tourism,A platform for promoting eco-tourism and sustainable travel,Software,SIH25073,0,Travel & Tourism
+74,Ministry of Women and Child Development,A platform for reporting and tracking cases of violence against women,Software,SIH25074,0,Miscellaneous
+75,Ministry of Women and Child Development,A system for monitoring the health and nutrition of children,Software,SIH25075,0,MedTech / BioTech / HealthTech
+76,Ministry of Women and Child Development,A platform for providing skill development and employment opportunities for women,Software,SIH25076,0,Miscellaneous
+77,Ministry of Women and Child Development,A system for tracking missing children,Software,SIH25077,0,Miscellaneous
+78,Ministry of Women and Child Development,A platform for promoting gender equality and women empowerment,Software,SIH25078,0,Miscellaneous
+79,AICTE,Student Innovation,Hardware,SIH25079,0,"Agriculture, FoodTech & Rural Development"
+80,AICTE,Student Innovation,Hardware,SIH25080,0,Blockchain & Cybersecurity
+81,AICTE,Student Innovation,Hardware,SIH25081,0,Clean & Green Technology
+82,AICTE,Student Innovation,Hardware,SIH25082,0,Disaster Management
+83,AICTE,Student Innovation,Hardware,SIH25083,0,Fitness & Sports
+84,AICTE,Student Innovation,Hardware,SIH25084,0,Heritage & Culture
+85,AICTE,Student Innovation,Hardware,SIH25085,0,MedTech / BioTech / HealthTech
+86,AICTE,Student Innovation,Hardware,SIH25086,0,Miscellaneous
+87,AICTE,Student Innovation,Hardware,SIH25087,0,Renewable / Sustainable Energy
+88,AICTE,Student Innovation,Hardware,SIH25088,0,Robotics and Drones
+89,AICTE,Student Innovation,Hardware,SIH25089,0,Smart Automation
+90,AICTE,Student Innovation,Hardware,SIH25090,0,Smart Education
+91,AICTE,Student Innovation,Hardware,SIH25091,0,Space Technology
+92,AICTE,Student Innovation,Hardware,SIH25092,0,Toys & Games
+93,AICTE,Student Innovation,Hardware,SIH25093,0,Transportation & Logistics
+94,AICTE,Student Innovation,Hardware,SIH25094,0,Travel & Tourism
+95,AICTE,Student Innovation,Software,SIH25095,0,"Agriculture, FoodTech & Rural Development"
+96,AICTE,Student Innovation,Software,SIH25096,0,Blockchain & Cybersecurity
+97,AICTE,Student Innovation,Software,SIH25097,0,Clean & Green Technology
+98,AICTE,Student Innovation,Software,SIH25098,0,Disaster Management
+99,AICTE,Student Innovation,Software,SIH25099,0,Fitness & Sports
+100,AICTE,Student Innovation,Software,SIH25100,0,Heritage & Culture
+101,AICTE,Student Innovation,Software,SIH25101,0,MedTech / BioTech / HealthTech
+102,AICTE,Student Innovation,Software,SIH25102,0,Miscellaneous
+103,AICTE,Student Innovation,Software,SIH25103,0,Renewable / Sustainable Energy
+104,AICTE,Student Innovation,Software,SIH25104,0,Robotics and Drones
+105,AICTE,Student Innovation,Software,SIH25105,0,Smart Automation
+106,AICTE,Student Innovation,Software,SIH25106,0,Smart Education
+107,AICTE,Student Innovation,Software,SIH25107,0,Space Technology
+108,AICTE,Student Innovation,Software,SIH25108,0,Toys & Games
+109,AICTE,Student Innovation,Software,SIH25109,0,Transportation & Logistics
+110,AICTE,Student Innovation,Software,SIH25110,0,Travel & Tourism
+111,AICTE,Student Innovation,Hardware,SIH25111,0,Miscellaneous
+112,AICTE,Student Innovation,Hardware,SIH25112,0,Miscellaneous
+113,AICTE,Student Innovation,Hardware,SIH25113,0,Smart Automation
+114,AICTE,Student Innovation,Hardware,SIH25121,0,Transportation & Logistics
+115,AICTE,Student Innovation,Hardware,SIH25122,0,Disaster Management
+116,AICTE,Student Innovation,Hardware,SIH25123,0,Smart Education
+117,AICTE,Student Innovation,Hardware,SIH25124,0,Toys & Games
+118,AICTE,Student Innovation,Hardware,SIH25125,0,Space Technology
+119,AICTE,Student Innovation,Software,SIH25126,0,"Agriculture, FoodTech & Rural Development"
+120,AICTE,Student Innovation,Software,SIH25127,0,Blockchain & Cybersecurity
+121,AICTE,Student Innovation,Software,SIH25128,0,Clean & Green Technology
+122,AICTE,Student Innovation,Software,SIH25129,0,Fitness & Sports
+123,AICTE,Student Innovation,Software,SIH25130,0,Heritage & Culture
+124,AICTE,Student Innovation,Software,SIH25131,0,MedTech / BioTech / HealthTech
+125,AICTE,Student Innovation,Software,SIH25132,0,Miscellaneous
+126,AICTE,Student Innovation,Software,SIH25133,0,Renewable / Sustainable Energy
+127,AICTE,Student Innovation,Software,SIH25134,0,Robotics and Drones
+128,AICTE,Student Innovation,Software,SIH25135,0,Smart Automation
+129,AICTE,Student Innovation,Software,SIH25136,0,Smart Education
+130,AICTE,Student Innovation,Software,SIH25137,0,Space Technology
+131,AICTE,Student Innovation,Software,SIH25138,0,Toys & Games
+132,AICTE,Student Innovation,Software,SIH25139,0,Travel & Tourism
+133,AICTE,Student Innovation,Hardware,SIH25140,0,"Agriculture, FoodTech & Rural Development"
+134,AICTE,Student Innovation,Software,SIH25141,0,"Agriculture, FoodTech & Rural Development"
+135,AICTE,Student Innovation,Hardware,SIH25142,0,"Agriculture, FoodTech & Rural Development"`;
+
+        const themeConfig = {
+            "Smart Education": { icon: "fa-graduation-cap", color: "blue" },
+            "Miscellaneous": { icon: "fa-puzzle-piece", color: "gray" },
+            "Agriculture, FoodTech & Rural Development": { icon: "fa-leaf", color: "green" },
+            "Smart Automation": { icon: "fa-cogs", color: "slate" },
+            "MedTech / BioTech / HealthTech": { icon: "fa-heart-pulse", color: "red" },
+            "Transportation & Logistics": { icon: "fa-truck-fast", color: "orange" },
+            "Disaster Management": { icon: "fa-house-fire", color: "amber" },
+            "Clean & Green Technology": { icon: "fa-recycle", color: "teal" },
+            "Travel & Tourism": { icon: "fa-plane-departure", color: "sky" },
+            "Blockchain & Cybersecurity": { icon: "fa-shield-halved", color: "indigo" },
+            "Fitness & Sports": { icon: "fa-dumbbell", color: "yellow" },
+            "Heritage & Culture": { icon: "fa-landmark", color: "stone" },
+            "Renewable / Sustainable Energy": { icon: "fa-solar-panel", color: "lime" },
+            "Robotics and Drones": { icon: "fa-robot", color: "purple" },
+            "Space Technology": { icon: "fa-rocket", color: "violet" },
+            "Toys & Games": { icon: "fa-gamepad", color: "pink" },
+            "Default": { icon: "fa-question-circle", color: "gray" }
+        };
+
+        const colorClasses = {
+            'blue': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-300', iconBg: 'bg-blue-200' },
+            'gray': { bg: 'bg-gray-100', text: 'text-gray-800', border: 'border-gray-300', iconBg: 'bg-gray-200' },
+            'green': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-300', iconBg: 'bg-green-200' },
+            'slate': { bg: 'bg-slate-100', text: 'text-slate-800', border: 'border-slate-300', iconBg: 'bg-slate-200' },
+            'red': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-300', iconBg: 'bg-red-200' },
+            'orange': { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-300', iconBg: 'bg-orange-200' },
+            'amber': { bg: 'bg-amber-100', text: 'text-amber-800', border: 'border-amber-300', iconBg: 'bg-amber-200' },
+            'teal': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-300', iconBg: 'bg-teal-200' },
+            'sky': { bg: 'bg-sky-100', text: 'text-sky-800', border: 'border-sky-300', iconBg: 'bg-sky-200' },
+            'indigo': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-300', iconBg: 'bg-indigo-200' },
+            'yellow': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-300', iconBg: 'bg-yellow-200' },
+            'stone': { bg: 'bg-stone-100', text: 'text-stone-800', border: 'border-stone-300', iconBg: 'bg-stone-200' },
+            'lime': { bg: 'bg-lime-100', text: 'text-lime-800', border: 'border-lime-300', iconBg: 'bg-lime-200' },
+            'purple': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-300', iconBg: 'bg-purple-200' },
+            'violet': { bg: 'bg-violet-100', text: 'text-violet-800', border: 'border-violet-300', iconBg: 'bg-violet-200' },
+            'pink': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-300', iconBg: 'bg-pink-200' },
+        };
+        
+        function parseCSV(data) {
+            const lines = data.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            return lines.slice(1).map(line => {
+                const values = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g) || [];
+                const entry = {};
+                headers.forEach((header, i) => {
+                    let value = (values[i] || '').trim();
+                    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+                    entry[header] = value;
+                });
+                return entry;
+            });
+        }
+        
+        function createCard(problem) {
+            const theme = problem['Theme'] || 'Default';
+            const config = themeConfig[theme] || themeConfig['Default'];
+            const colors = colorClasses[config.color] || colorClasses['gray'];
+            const card = document.createElement('div');
+            card.className = `card border rounded-xl overflow-hidden shadow-lg ${colors.bg} ${colors.border} card-enter`;
+            card.dataset.title = problem['Problem Statement Title'].toLowerCase();
+            card.dataset.theme = problem['Theme'];
+
+            card.innerHTML = `
+                <div class="p-5">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-lg ${colors.iconBg} ${colors.text} flex items-center justify-center text-xl flex-shrink-0">
+                            <i class="fas ${config.icon}"></i>
+                        </div>
+                        <div>
+                            <span class="text-sm font-semibold ${colors.text} px-2.5 py-1 rounded-full ${colors.iconBg}">${theme}</span>
+                        </div>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2 h-20 overflow-hidden">${problem['Problem Statement Title']}</h3>
+                    <p class="text-sm text-gray-600 mb-4"><i class="fas fa-building mr-2"></i><strong>Organization:</strong> ${problem['Organization']}</p>
+                    <div class="flex justify-between items-center text-xs text-gray-500 pt-3 border-t ${colors.border}">
+                        <span class="font-semibold px-3 py-1 rounded-full bg-white shadow-sm">${problem['Category']}</span>
+                        <span class="font-mono">${problem['PS Number']}</span>
+                    </div>
+                </div>
+            `;
+            return card;
+        }
+
+        // Generates illustrative content for the Global Impact page
+        function generateImpactContent(problem) {
+            const title = problem['Problem Statement Title'].toLowerCase();
+            const theme = problem['Theme'];
+
+            let impact = "Solving this challenge could significantly advance its respective industry, leading to improved efficiency, accessibility, and new market opportunities. The solution could serve as a model for other regions facing similar issues.";
+            let players = "Relevant government ministries, leading national tech companies (e.g., Tata Consultancy Services, Infosys, Reliance Jio), and prominent research universities (e.g., IITs, IISc).";
+
+            if (theme.includes('MedTech')) {
+                impact = "Addresses critical healthcare gaps, potentially saving lives and improving public health outcomes. A successful solution could align with UN Sustainable Development Goal 3 (Good Health) and be adapted for use in developing nations worldwide.";
+                players = "World Health Organization (WHO), Bill & Melinda Gates Foundation, Ministries of Health globally. Fortune 500: Johnson & Johnson, Pfizer, Roche, Siemens Healthineers, Philips Healthcare.";
+            } else if (theme.includes('Agriculture')) {
+                impact = "Crucial for ensuring food security and sustainability in the face of climate change. Innovations can boost crop yields, reduce waste, and improve livelihoods for millions of farmers, impacting global supply chains.";
+                players = "Food and Agriculture Organization (FAO), World Food Programme. Fortune 500: Bayer (Monsanto), John Deere, Corteva Agriscience, Archer Daniels Midland (ADM), Cargill.";
+            } else if (theme.includes('Transportation')) {
+                impact = "Directly tackles urban congestion, pollution, and supply chain inefficiencies. Smart logistics and transport solutions reduce carbon footprints and can revolutionize global trade and daily commutes, aligning with smart city initiatives everywhere.";
+                players = "World Bank (Infrastructure division), National Highway Authorities. Fortune 500: Tesla, Waymo (Alphabet), Uber, FedEx, Maersk, Boeing, Toyota.";
+            } else if (theme.includes('Education')) {
+                impact = "Democratizes access to quality education, enabling personalized learning at scale. This can bridge skill gaps, foster lifelong learning, and empower communities, aligning with UN SDG 4 (Quality Education).";
+                players = "UNESCO, Coursera, edX. Fortune 500: Google (Classroom), Microsoft (Teams for Education), Apple (Education), Pearson PLC.";
+            } else if (theme.includes('Energy') || theme.includes('Clean')) {
+                 impact = "Essential for combating climate change and transitioning to a sustainable future. Innovations in this area reduce dependence on fossil fuels, lower greenhouse gas emissions, and can lead to energy independence for nations.";
+                players = "International Renewable Energy Agency (IRENA), United Nations Framework Convention on Climate Change (UNFCCC). Fortune 500: NextEra Energy, Ørsted, Siemens Gamesa, General Electric, ExxonMobil (transitioning divisions).";
+            } else if (theme.includes('Cybersecurity')) {
+                impact = "Protects critical digital infrastructure for governments, corporations, and individuals from ever-evolving threats. A robust solution enhances national security, ensures data privacy, and builds trust in the digital economy.";
+                players = "INTERPOL, National security agencies (e.g., NSA, GCHQ). Fortune 500: Microsoft, Palo Alto Networks, CrowdStrike, Fortinet, Cisco, Amazon (AWS Security).";
+            }
+
+            return { impact, players };
+        }
+
+        function createAccordionItem(problem) {
+            const { impact, players } = generateImpactContent(problem);
+            const theme = problem['Theme'] || 'Default';
+            const config = themeConfig[theme] || themeConfig['Default'];
+            const colors = colorClasses[config.color] || colorClasses['gray'];
+            const item = document.createElement('div');
+            item.className = `border ${colors.border} rounded-lg shadow-md bg-white`;
+            item.innerHTML = `
+                <button class="accordion-button w-full text-left p-4 ${colors.bg} rounded-t-lg hover:opacity-90 focus:outline-none">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                             <div class="w-10 h-10 rounded-md ${colors.iconBg} ${colors.text} flex items-center justify-center text-lg flex-shrink-0">
+                                <i class="fas ${config.icon}"></i>
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-800">${problem['Problem Statement Title']}</p>
+                                <p class="text-xs ${colors.text} font-medium">${problem['Organization']} - ${theme}</p>
+                            </div>
+                        </div>
+                        <span class="accordion-icon text-gray-500 text-xl"><i class="fas fa-chevron-down"></i></span>
+                    </div>
+                </button>
+                <div class="accordion-content">
+                    <div class="py-4">
+                        <h4 class="font-bold text-md text-gray-700 mb-2"><i class="fas fa-globe mr-2 ${colors.text}"></i>Potential Global Impact</h4>
+                        <p class="text-sm text-gray-600 mb-4">${impact}</p>
+                        <h4 class="font-bold text-md text-gray-700 mb-2"><i class="fas fa-industry mr-2 ${colors.text}"></i>Key Players & Companies</h4>
+                        <p class="text-sm text-gray-600">${players}</p>
+                    </div>
+                </div>
+            `;
+            return item;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const problemData = parseCSV(csvData);
+            const grid = document.getElementById('problemGrid');
+            const filtersContainer = document.getElementById('themeFilters');
+            const searchInput = document.getElementById('searchInput');
+            const noResultsDiv = document.getElementById('noResults');
+            const explorerPage = document.getElementById('explorerPage');
+            const impactPage = document.getElementById('impactPage');
+            const navExplorer = document.getElementById('navExplorer');
+            const navImpact = document.getElementById('navImpact');
+            const impactAccordionContainer = document.getElementById('impactAccordionContainer');
+
+            // Populate Explorer grid
+            problemData.forEach(problem => grid.appendChild(createCard(problem)));
+
+            // Populate Impact page
+            problemData.forEach(problem => impactAccordionContainer.appendChild(createAccordionItem(problem)));
+
+            // Populate theme filters
+            const themes = ['All', ...new Set(problemData.map(p => p['Theme']))];
+            themes.forEach(theme => {
+                const config = themeConfig[theme] || themeConfig['Default'];
+                const colors = colorClasses[config.color] || colorClasses['gray'];
+                const button = document.createElement('button');
+                button.textContent = theme;
+                button.dataset.theme = theme;
+                button.className = `theme-filter-btn px-4 py-2 text-sm font-medium rounded-lg shadow-sm border ${colors.border} ${colors.text} ${colors.bg} hover:opacity-80`;
+                if (theme === 'All') {
+                    button.classList.add('active');
+                    button.style.backgroundColor = colors.bg.replace('100','200');
+                }
+                filtersContainer.appendChild(button);
+            });
+
+            const filterButtons = document.querySelectorAll('.theme-filter-btn');
+            let activeTheme = 'All';
+
+            function filterAndSearch() {
+                const searchTerm = searchInput.value.toLowerCase();
+                let resultsFound = false;
+                document.querySelectorAll('.card').forEach(card => {
+                    const themeMatch = activeTheme === 'All' || card.dataset.theme === activeTheme;
+                    const searchMatch = card.dataset.title.includes(searchTerm);
+                    if (themeMatch && searchMatch) {
+                        card.classList.remove('hidden-card');
+                        resultsFound = true;
+                    } else {
+                        card.classList.add('hidden-card');
+                    }
+                });
+                noResultsDiv.classList.toggle('hidden', resultsFound);
+            }
+            
+            filtersContainer.addEventListener('click', (e) => {
+                if(e.target.tagName === 'BUTTON') {
+                    activeTheme = e.target.dataset.theme;
+                    filterButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        const btnColors = colorClasses[(themeConfig[btn.dataset.theme] || themeConfig.Default).color] || colorClasses.gray;
+                        btn.style.backgroundColor = '';
+                    });
+                    e.target.classList.add('active');
+                    const activeColors = colorClasses[(themeConfig[activeTheme] || themeConfig.Default).color] || colorClasses.gray;
+                    e.target.style.backgroundColor = activeColors.bg.replace('100','200');
+                    filterAndSearch();
+                }
+            });
+
+            searchInput.addEventListener('input', filterAndSearch);
+
+            // Page Navigation Logic
+            navExplorer.addEventListener('click', () => {
+                explorerPage.classList.remove('hidden-page');
+                impactPage.classList.add('hidden-page');
+                navExplorer.classList.add('active');
+                navImpact.classList.remove('active');
+            });
+
+            navImpact.addEventListener('click', () => {
+                explorerPage.classList.add('hidden-page');
+                impactPage.classList.remove('hidden-page');
+                navExplorer.classList.remove('active');
+                navImpact.classList.add('active');
+            });
+            
+            // Accordion Logic
+            impactAccordionContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.accordion-button');
+                if (button) {
+                    const content = button.nextElementSibling;
+                    const wasOpen = button.classList.contains('open');
+                    // Close all accordions first
+                    document.querySelectorAll('.accordion-button').forEach(btn => {
+                       btn.classList.remove('open');
+                       btn.nextElementSibling.classList.remove('open');
+                    });
+                    // If the clicked one wasn't the one already open, open it
+                    if(!wasOpen){
+                       button.classList.add('open');
+                       content.classList.add('open');
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
